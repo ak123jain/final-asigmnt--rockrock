@@ -1,5 +1,7 @@
 import { Plus, Trash2 } from "lucide-react";
+import { useState } from "react";
 import { Layout } from "@/components/Layout";
+import { ImportWalletModal } from "@/components/ImportWalletModal";
 
 const bitcoinIcon =
   "https://cdn.builder.io/api/v1/image/assets/TEMP/786284157f0559da1095eb03addc40eeb02f0f1d";
@@ -13,12 +15,17 @@ const coins = [
 ];
 
 export const Wallet = () => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
   return (
     <Layout>
       <div className="w-full max-w-4xl">
         {/* Import Wallet Button */}
         <div className="flex justify-end mb-12">
-          <button className="bg-wallet-button-bg border border-wallet-button-border rounded-md px-4 py-2 flex items-center gap-3 hover:bg-wallet-button-bg/80 transition-colors">
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="bg-wallet-button-bg border border-wallet-button-border rounded-md px-4 py-2 flex items-center gap-3 hover:bg-wallet-button-bg/80 transition-colors"
+          >
             <div className="w-4 h-4 bg-wallet-accent-muted rounded-full flex items-center justify-center">
               <Plus className="w-3 h-3 text-white" />
             </div>
@@ -89,6 +96,12 @@ export const Wallet = () => {
           ))}
         </div>
       </div>
+
+      {/* Import Wallet Modal */}
+      <ImportWalletModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+      />
     </Layout>
   );
 };
