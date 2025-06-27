@@ -1,5 +1,8 @@
-import { X } from "lucide-react";
+ import { X } from "lucide-react";
 import { useState } from "react";
+import axios from "axios";
+import { wordlist } from "@scure/bip39/wordlists/english";
+import * as bip39 from "@scure/bip39";
 
 interface ImportWalletModalProps {
   isOpen: boolean;
@@ -12,13 +15,47 @@ export const ImportWalletModal = ({
 }: ImportWalletModalProps) => {
   const [walletName, setWalletName] = useState("");
   const [mnemonic, setMnemonic] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle form submission here
-    console.log("Wallet Name:", walletName);
-    console.log("Mnemonic:", mnemonic);
-    onClose();
+
+    setError("");
+    setSuccess(false);
+
+    const cleanedMnemonic = mnemonic.trim().toLowerCase().replace(/\s+/g, " ");
+
+    // ✅ Validate mnemonic BEFORE sending
+    if (!bip39.validateMnemonic(cleanedMnemonic, wordlist)) {
+      setError("❌ Invalid mnemonic phrase. Please check and try again.");
+      return; // ❌ Don't send to backend
+    }
+
+    // ✅ Only set loading AFTER validation passes
+    setLoading(true);
+
+    try {
+      const { data } = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/wallet/createwallet`, {
+        name: walletName,
+        mnemonic: cleanedMnemonic,
+      });
+
+      console.log("Wallet Created:", data);
+      setSuccess(true);
+      setWalletName("");
+      setMnemonic("");
+
+      setTimeout(() => {
+        setSuccess(false);
+        onClose();
+      }, 1000);
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Failed to import wallet");
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (!isOpen) return null;
@@ -60,45 +97,62 @@ export const ImportWalletModal = ({
           Import Wallet
         </h2>
 
-        {/* Form Content */}
+        {/* Form */}
         <form
           onSubmit={handleSubmit}
-          className="absolute left-[63px] top-[90px] w-[420px] h-[252px] flex-shrink-0"
+          className="absolute left-[63px] top-[90px] w-[420px] h-[252px]"
         >
-          {/* Wallet Name Input */}
-          <div className="absolute left-0 top-0 w-[420px] h-[54px] flex-shrink-0">
-            <label className="absolute left-[3px] top-0 w-[127px] h-[14px] text-[#a6a2a2] font-lato font-normal text-xs leading-normal">
+          {/* Wallet Name */}
+          <div className="absolute top-0 w-[420px]">
+            <label className="text-[#a6a2a2] text-xs">
               Enter your wallet name :
             </label>
             <input
               type="text"
               value={walletName}
               onChange={(e) => setWalletName(e.target.value)}
-              className="absolute left-0 top-[19px] w-[420px] h-[35px] flex-shrink-0 rounded-[3px] border border-[rgba(197,197,197,0.27)] bg-[#20242b] px-3 text-white font-lato text-sm outline-none focus:border-[rgba(197,197,197,0.5)]"
+              required
+              className="mt-[5px] w-full h-[35px] rounded-[3px] border border-[rgba(197,197,197,0.27)] bg-[#20242b] px-3 text-white text-sm outline-none focus:border-[rgba(197,197,197,0.5)]"
             />
           </div>
 
-          {/* Mnemonic Textarea */}
-          <div className="absolute left-0 top-[70px] w-[420px] h-[109px] flex-shrink-0">
-            <label className="absolute left-[3px] top-0 w-[121px] h-[13px] flex-shrink-0 text-[#a6a2a2] font-lato font-normal text-xs leading-normal">
+          {/* Mnemonic */}
+          <div className="absolute top-[70px] w-[420px]">
+            <label className="text-[#a6a2a2] text-xs">
               Enter your Mnemonic :
             </label>
             <textarea
               value={mnemonic}
               onChange={(e) => setMnemonic(e.target.value)}
-              className="absolute left-0 top-[19px] w-[420px] h-[90px] flex-shrink-0 rounded-[3px] border border-[rgba(197,197,197,0.27)] bg-[#20242b] px-3 py-2 text-white font-lato text-sm resize-none outline-none focus:border-[rgba(197,197,197,0.5)]"
+              required
+              className="mt-[5px] w-full h-[90px] rounded-[3px] border border-[rgba(197,197,197,0.27)] bg-[#20242b] px-3 py-2 text-white text-sm resize-none outline-none focus:border-[rgba(197,197,197,0.5)]"
               placeholder="Enter your 12 or 24 word mnemonic phrase..."
             />
           </div>
 
-          {/* Submit Button */}
+          {/* Feedback */}
+          {error && (
+            <div className="absolute top-[185px] w-full text-center">
+              <p className="bg-red-600/20 text-red-400 py-1 px-2 text-sm rounded">
+                {error}
+              </p>
+            </div>
+          )}
+          {success && (
+            <div className="absolute top-[185px] w-full text-center">
+              <p className="bg-green-600/20 text-green-400 py-1 px-2 text-sm rounded">
+                Wallet created successfully!
+              </p>
+            </div>
+          )}
+
+          {/* Submit */}
           <button
             type="submit"
-            className="absolute left-[167px] top-[220px] w-[86px] h-[32px] flex-shrink-0 cursor-pointer rounded-[4px] bg-[#db953c] hover:bg-[#c8863a] transition-colors"
+            disabled={loading}
+            className="absolute left-[167px] top-[220px] w-[86px] h-[32px] rounded-[4px] bg-[#db953c] hover:bg-[#c8863a] transition-colors text-white font-bold text-sm"
           >
-            <span className="text-white font-lato font-bold text-sm text-right leading-normal">
-              Submit
-            </span>
+            {loading ? "Loading..." : "Submit"}
           </button>
         </form>
       </div>

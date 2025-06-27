@@ -1,25 +1,41 @@
-import { Plus, Trash2 } from "lucide-react";
-import { useState } from "react";
+ import { Plus, Trash2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import axios from "axios";
 import { Layout } from "@/components/Layout";
 import { ImportWalletModal } from "@/components/ImportWalletModal";
 
 const bitcoinIcon =
   "https://cdn.builder.io/api/v1/image/assets/TEMP/786284157f0559da1095eb03addc40eeb02f0f1d";
 
-const coins = [
-  { name: "BITCOIN", amount: "BTC 0.00256" },
-  { name: "BITCOIN 1", amount: "BTC 0.00256" },
-  { name: "BITCOIN 2", amount: "BTC 0.00256" },
-  { name: "BITCOIN 3", amount: "BTC 0.00256" },
-  { name: "BITCOIN 4", amount: "BTC 0.00256" },
-];
-
 export const Wallet = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [coins, setCoins] = useState([]);
+
+  // ✅ Fetch wallet data on mount
+  useEffect(() => {
+    const fetchWallet = async () => {
+      try {
+        const res = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/wallet/getwallet`);
+
+        console.log("Wallet Data:", res.data);
+
+        // If response is { wallets: [...] }
+        const wallets = Array.isArray(res.data)
+          ? res.data
+          : res.data.wallets || [];
+
+        setCoins(wallets);
+      } catch (err) {
+        console.error("Failed to fetch wallet:", err);
+      }
+    };
+
+    fetchWallet();
+  }, []);
 
   return (
     <Layout>
-      <div className="w-full max-w-4xl">
+      <div className="w-full max-w-4xl mx-auto">
         {/* Import Wallet Button */}
         <div className="flex justify-end mb-12">
           <button
@@ -38,7 +54,7 @@ export const Wallet = () => {
         {/* Total Coins Header */}
         <div className="mb-6">
           <h2 className="text-wallet-text-secondary text-xs font-lato font-bold mb-4 ml-8">
-            Total Coins - 7
+            Total Coins - {coins.length}
           </h2>
           <div className="w-full h-px bg-wallet-border"></div>
         </div>
@@ -84,7 +100,7 @@ export const Wallet = () => {
               </div>
               <div className="w-32 text-center">
                 <span className="text-wallet-text-secondary text-xs font-lato font-bold">
-                  {coin.amount}
+                  {coin.balance}
                 </span>
               </div>
               <div className="w-24 text-center">
